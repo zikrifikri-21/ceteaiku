@@ -11,8 +11,9 @@ if (!API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+// FIX: Update ActionResult to include mimeType for the generated image.
 interface ActionResult {
-  imageData?: string;
+  imageData?: { base64: string; mimeType: string };
   error?: string;
 }
 
@@ -48,7 +49,8 @@ export async function editImageWithPromptAction(
 
     for (const part of response.candidates?.[0]?.content?.parts ?? []) {
       if (part.inlineData) {
-        return { imageData: part.inlineData.data };
+        // FIX: Return both base64 data and mimeType.
+        return { imageData: { base64: part.inlineData.data, mimeType: part.inlineData.mimeType } };
       }
     }
     return { error: "Failed to generate image. The model did not return image data." };

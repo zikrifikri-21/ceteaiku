@@ -31,8 +31,9 @@ export default function HomePage() {
 
     const result = await editImageWithPromptAction(originalImage.base64, originalImage.mimeType, prompt);
 
+    // FIX: Use the mimeType from the response to construct the data URL.
     if (result.imageData) {
-      setEditedImage(`data:image/jpeg;base64,${result.imageData}`);
+      setEditedImage(`data:${result.imageData.mimeType};base64,${result.imageData.base64}`);
     } else {
       setError(result.error || 'An unknown error occurred.');
     }
