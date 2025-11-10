@@ -1,3 +1,4 @@
+'use server';
 
 import { GoogleGenAI, Modality } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
@@ -5,12 +6,25 @@ import type { GenerateContentResponse } from "@google/genai";
 const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set");
+  throw new Error("API_KEY environment variable not set on the server");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-export async function editImageWithPrompt(base64ImageData: string, mimeType: string, promptText: string): Promise<string | null> {
+interface ActionResult {
+  imageData?: string;
+  error?: string;
+}
+
+export async function editImageWithPromptAction(
+    base64ImageData: string, 
+    mimeType: string, 
+    promptText: string
+): Promise<ActionResult> {
+  if (!base64ImageData || !mimeType || !promptText) {
+    return { error: "Missing image, mime type, or prompt." };
+  }
+
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -32,16 +46,15 @@ export async function editImageWithPrompt(base64ImageData: string, mimeType: str
       },
     });
 
-    console.log(`apalah: ${API_KEY}`)
-    console.table(ai)
     for (const part of response.candidates?.[0]?.content?.parts ?? []) {
       if (part.inlineData) {
-        return part.inlineData.data;
+        return { imageData: part.inlineData.data };
       }
     }
-    return null;
+    return { error: "Failed to generate image. The model did not return image data." };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    throw new Error("Failed to communicate with the Gemini API. Check console for details.");
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { error: `Failed to communicate with the Gemini API: ${errorMessage}` };
   }
 }
